@@ -97,27 +97,101 @@ A vibration motor is used to provide a physical pulse simulation during the trai
 
 ## Communication Protocol
 
-The firmware uses Bluetooth Classic and exchanges structured JSON messages.
+The firmware uses Bluetooth Classic (`ManikinESP32`) and exchanges newline-delimited JSON messages.
 
-Example command:
+### Device → App
+
+- **Startup health report**
+  ```json
+  {
+    "type": "health_report",
+    "load_cell": true,
+    "hall1": true,
+    "hall2": true,
+    "hall3": true,
+    "hall4": true,
+    "pressure": true
+  }
+  ```
+- **Session data (every ~100 ms while active)**
+  - CPR mode (`course_id: 0`):
+    ```json
+    {
+      "type": "course_data",
+      "course_id": 0,
+      "hall1": 0,
+      "hall2": 0,
+      "hall3": 0,
+      "hall4": 0,
+      "weight_raw": 0,
+      "pressure_raw": 0,
+      "time_left_ms": 0
+    }
+    ```
+  - Pulse mode (`course_id: 1`):
+    ```json
+    {
+      "type": "pulse_data",
+      "course_id": 1,
+      "time_left_ms": 0
+    }
+    ```
+  - Test mode:
+    ```json
+    {
+      "type": "test_data",
+      "hall1": 0,
+      "hall2": 0,
+      "hall3": 0,
+      "hall4": 0,
+      "weight_raw": 0,
+      "pressure_raw": 0,
+      "time_left_ms": 0
+    }
+    ```
+- **Session end notification**
+  ```json
+  {
+    "type": "session_end",
+    "reason": "timeout"
+  }
+  ```
+
+### App → Device
+
+- **Start a course session**
+  - CPR:
+    ```json
+    {
+      "type": "course",
+      "course_id": 0
+    }
+    ```
+  - Pulse:
+    ```json
+    {
+      "type": "course",
+      "course_id": 1,
+      "freq": 60
+    }
+    ```
+- **Start test mode**
+  ```json
+  {
+    "type": "test",
+    "freq": 60
+  }
+  ```
+
+### Device acknowledgements
+
+For valid `course` and `test` commands, the device responds:
 
 ```json
 {
-  "command": "start"
+  "status": "ok"
 }
 ```
-
-Example sensor data structure:
-
-```json
-{
-  "force": 45.2,
-  "depth": 5.4,
-  "pressure": 550
-}
-```
-
-The exact fields and commands supported by the current firmware are defined in [`main.ino`](./main.ino).
 
 ## Project Documentation
 
